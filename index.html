@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+    />
+    <title>Защита Земли</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- Стартовый экран -->
+    <div id="startScreen">
+      <h1>Защита Земли</h1>
+      <button class="btn" id="startButton">Начать</button>
+    </div>
+
+    <!-- Экран окончания игры -->
+    <div id="gameOverScreen" style="display: none">
+      <h1>Вы проиграли</h1>
+      <p id="scoreDisplay"></p>
+      <button class="btn" id="restartButton">Заново</button>
+    </div>
+
+    <!-- Игровая зона -->
+    <canvas id="gameCanvas"></canvas>
+
+    <script src="script.js"></script>
+  </body>
+</html>
