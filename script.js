@@ -77,9 +77,9 @@ function createStars() {
 
 // Создание астероидов
 function createAsteroid() {
-  const sizeOptions = [50, 101, 152]; // Увеличены размеры на 30% дважды
+  const sizeOptions = [120, 152]; // Увеличены размеры на 30% дважды
   const size = sizeOptions[Math.floor(Math.random() * sizeOptions.length)];
-  const speed = (Math.random() * 2 + 1) * speedMultiplier; // Учитываем ускорение
+  const speed = 1; // Учитываем ускорение
   const edge = Math.floor(Math.random() * 4);
   let x, y;
 
