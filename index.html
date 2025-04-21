@@ -14,14 +14,20 @@
     <div id="startScreen">
       <p style="font-size: 36px">Защита Земли</p>
       <p style="font-size: 24px">Используй палец.</p>
-      <button class="btn" id="startButton">Начать</button>
+      <div class="button_container">
+        <button class="btn" id="startButton">Начать</button>
+        <button class="btn returnButton">Меню</button>
+      </div>
     </div>
 
     <!-- Экран окончания игры -->
     <div id="gameOverScreen" style="display: none">
       <h1>Вы проиграли</h1>
       <p id="scoreDisplay"></p>
-      <button class="btn" id="restartButton">Заново</button>
+      <div class="button_container">
+        <button class="btn" id="restartButton">Заново</button>
+        <button class="btn returnButton">Меню</button>
+      </div>
     </div>
 
     <!-- Игровая зона -->

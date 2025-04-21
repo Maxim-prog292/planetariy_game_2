@@ -1,4 +1,11 @@
 // Получение элементов
+const returnButton = document.querySelectorAll(".returnButton");
+console.log(returnButton);
+returnButton.forEach((element) =>
+  element.addEventListener("click", () => {
+    window.location.href = "https://maxim-prog292.github.io/Game-selection/";
+  })
+);
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const startScreen = document.getElementById("startScreen");
@@ -6,6 +13,15 @@ const gameOverScreen = document.getElementById("gameOverScreen");
 const startButton = document.getElementById("startButton");
 const restartButton = document.getElementById("restartButton");
 const scoreDisplay = document.getElementById("scoreDisplay");
+document.addEventListener("keydown", (e) => {
+  if (e.key === "s") activateShield(); // Щит
+  if (e.key === "l") activateLaser(); // Лазер
+});
+const shieldImg = new Image();
+shieldImg.src = "shield.png";
+
+const laserImg = new Image();
+laserImg.src = "laser.png";
 
 document.addEventListener(
   "touchstart",
@@ -61,7 +77,24 @@ let stars = [];
 let score = 0;
 let gameRunning = false;
 let asteroidInterval;
-let speedMultiplier = 1; // Начальная скорость
+let speedMultiplier = 5; // Начальная скорость
+
+// Переменные бонусов
+let bonuses = [];
+let shieldActive = false;
+let laserActive = false;
+let laserTimer = 0;
+const laserDuration = 600; // 30 секунд * 60 FPS
+const laserRadius = 200;
+
+function activateShield() {
+  shieldActive = true;
+}
+
+function activateLaser() {
+  laserActive = true;
+  laserTimer = laserDuration;
+}
 
 // Создание звёзд
 function createStars() {
@@ -79,7 +112,7 @@ function createStars() {
 function createAsteroid() {
   const sizeOptions = [120, 152]; // Увеличены размеры на 30% дважды
   const size = sizeOptions[Math.floor(Math.random() * sizeOptions.length)];
-  const speed = 1; // Учитываем ускорение
+  const speed = 4; // Учитываем ускорение
   const edge = Math.floor(Math.random() * 4);
   let x, y;
 
@@ -260,6 +293,7 @@ function drawLives(moon, planet) {
 }
 
 // Обновление игры
+// Обновление астероидов (замени свою функцию)
 function updateAsteroids() {
   asteroids.forEach((asteroid, index) => {
     asteroid.x += asteroid.velocity.x;
@@ -273,9 +307,15 @@ function updateAsteroids() {
     const dmy = asteroid.y - moon.y;
     const distanceMoon = Math.sqrt(dmx * dmx + dmy * dmy);
 
-    if (distanceEarth < planet.radius + asteroid.size / 2) {
+    let destroyed = false;
+
+    if (shieldActive && distanceEarth < planet.radius + asteroid.size / 2) {
+      // Щит ломается
+      shieldActive = false;
+      destroyed = true;
+    } else if (distanceEarth < planet.radius + asteroid.size / 2) {
       planet.lives--;
-      asteroids.splice(index, 1);
+      destroyed = true;
       if (planet.lives <= 0) {
         planet.lives = 0;
         endGame();
@@ -285,83 +325,140 @@ function updateAsteroids() {
       distanceMoon < moon.radius + asteroid.size / 2
     ) {
       moon.lives--;
-      asteroids.splice(index, 1);
+      destroyed = true;
     }
-    if (moon.lives <= 0) {
-      moon.isVisible = false;
-      ctx.fillStyle = "red";
-      ctx.font = "36px Pixel";
-      ctx.fillText(`Луна потеряна!`, 20, 190);
+
+    // Уничтожение лазером
+    if (laserActive) {
+      const lx = asteroid.x - planet.x;
+      const ly = asteroid.y - planet.y;
+      const distLaser = Math.sqrt(lx * lx + ly * ly);
+      if (distLaser < laserRadius) {
+        destroyed = true;
+      }
     }
-  });
-  // asteroids.forEach((asteroid, index) => {
-  //   asteroid.x += asteroid.velocity.x;
-  //   asteroid.y += asteroid.velocity.y;
 
-  //   const dx = asteroid.x - moon.x;
-  //   const dy = asteroid.y - moon.y;
-  //   const distance = Math.sqrt(dx * dx + dy * dy);
-
-  //   if (distance < moon.radius + asteroid.size / 2) {
-  //     moon.lives--;
-  //     asteroids.splice(index, 1);
-  //   }
-  // });
-}
-
-// Клик для уничтожения астероидов
-canvas.addEventListener("click", (e) => {
-  const x = e.clientX;
-  const y = e.clientY;
-
-  asteroids.forEach((asteroid, index) => {
-    const dx = x - asteroid.x;
-    const dy = y - asteroid.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (distance < asteroid.size / 2) {
-      // Добавляем взрыв в массив
+    if (destroyed) {
       explosions.push({
         x: asteroid.x,
         y: asteroid.y,
-        size: asteroid.size / 3,
+        size: asteroid.size / 2,
         frames: 0,
       });
+
+      // 40% шанс дропа бонуса
+      if (Math.random() < 0.4) {
+        bonuses.push({
+          x: asteroid.x,
+          y: asteroid.y,
+          type: Math.random() < 0.5 ? "shield" : "laser",
+          size: 50,
+        });
+      }
+
       asteroids.splice(index, 1);
-      score++;
     }
   });
-});
-// Клик для уничтожения астероидов
-canvas.addEventListener("touch", (e) => {
-  const x = e.clientX;
-  const y = e.clientY;
 
-  asteroids.forEach((asteroid, index) => {
-    const dx = x - asteroid.x;
-    const dy = y - asteroid.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (distance < asteroid.size / 2) {
-      // Добавляем взрыв в массив
-      explosions.push({
-        x: asteroid.x,
-        y: asteroid.y,
-        size: asteroid.size / 3,
-        frames: 0,
-      });
-      asteroids.splice(index, 1);
-      score++;
-    }
-  });
-});
-// Ускорение игры
-function increaseSpeed() {
-  if (speedMultiplier < 15) {
-    // Максимальная скорость
-    speedMultiplier += 0.2; // Увеличиваем скорость каждые 5 секунд
+  if (moon.lives <= 0) {
+    moon.isVisible = false;
+    ctx.fillStyle = "red";
+    ctx.font = "36px Pixel";
+    ctx.fillText(`Луна потеряна!`, 20, 220);
   }
 }
+
+// Обработка кликов по бонусам
+canvas.addEventListener("click", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  for (let i = 0; i < bonuses.length; i++) {
+    const b = bonuses[i];
+    const dx = mx - b.x;
+    const dy = my - b.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < b.size / 2) {
+      if (b.type === "shield") activateShield();
+      if (b.type === "laser") activateLaser();
+      bonuses.splice(i, 1);
+      return;
+    }
+  }
+
+  // обычное уничтожение астероида по клику
+  asteroids.forEach((asteroid, index) => {
+    const dx = mx - asteroid.x;
+    const dy = my - asteroid.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    if (distance < asteroid.size / 2) {
+      explosions.push({
+        x: asteroid.x,
+        y: asteroid.y,
+        size: asteroid.size / 3,
+        frames: 0,
+      });
+      asteroids.splice(index, 1);
+      score++;
+
+      // шанс выпадения бонуса
+      if (Math.random() < 0.2) {
+        bonuses.push({
+          x: asteroid.x,
+          y: asteroid.y,
+          type: Math.random() < 0.5 ? "shield" : "laser",
+          size: 50,
+          spawnTime: Date.now(),
+        });
+      }
+    }
+  });
+});
+// Рисование бонусов
+function drawBonuses() {
+  const now = Date.now();
+  bonuses.forEach((bonus) => {
+    const img = bonus.type === "shield" ? shieldImg : laserImg;
+    ctx.drawImage(
+      img,
+      bonus.x - bonus.size / 2,
+      bonus.y - bonus.size / 2,
+      bonus.size,
+      bonus.size
+    );
+  });
+  bonuses = bonuses.filter((bonus) => now - bonus.spawnTime < 5000);
+}
+
+// Рисование щита
+function drawShield() {
+  if (shieldActive) {
+    ctx.beginPath();
+    ctx.arc(planet.x, planet.y, planet.radius + 15, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(0,150,255,0.4)";
+    ctx.lineWidth = 12;
+    ctx.stroke();
+  }
+}
+
+// Рисование лазера
+function drawLaser() {
+  if (laserActive) {
+    ctx.beginPath();
+    ctx.arc(planet.x, planet.y, laserRadius, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(255,0,0,0.2)";
+    ctx.lineWidth = 4;
+    ctx.stroke();
+  }
+}
+// // Ускорение игры
+// function increaseSpeed() {
+//   if (speedMultiplier < 300) {
+//     // Максимальная скорость
+//     speedMultiplier += 0.2; // Увеличиваем скорость каждые 5 секунд
+//   }
+// }
 
 // Игровой цикл
 function gameLoop() {
@@ -370,13 +467,25 @@ function gameLoop() {
   drawStars();
   drawPlanet();
   drawMoon();
-
+  drawShield();
+  drawLaser();
+  drawBonuses();
   drawAsteroids();
   drawExplosions();
-  drawScore(); // Рисуем текущий счет
+  drawScore();
   drawLives(moon.lives, planet.lives);
   updateAsteroids();
-  // checkCollisionsWithMoon();
+
+  if (laserActive) {
+    laserTimer--;
+    ctx.fillStyle = "white";
+    ctx.font = "20px Pixel";
+    ctx.fillText(`ЛАЗЕР: ${Math.ceil(laserTimer / 60)}с`, 20, 170);
+    if (laserTimer <= 0) {
+      laserActive = false;
+    }
+  }
+
   requestAnimationFrame(gameLoop);
 }
 
@@ -390,18 +499,25 @@ function startGame() {
   score = 0;
   asteroids = [];
   explosions = [];
-  speedMultiplier = 1; // Сбрасываем скорость
+  speedMultiplier = 5; // Сбрасываем скорость
   createStars();
   asteroidInterval = setInterval(createAsteroid, 1000);
-  setInterval(increaseSpeed, 5000); // Ускоряем каждые 5 секунд
+  // setInterval(increaseSpeed, 1000); // Ускоряем каждые 5 секунд
   gameLoop();
 }
 
+// endGame — сбросить бонусы
 function endGame() {
   gameRunning = false;
   clearInterval(asteroidInterval);
   gameOverScreen.style.display = "flex";
   scoreDisplay.textContent = `Ваш счет: ${score}`;
+
+  // Сброс всех бонусов
+  bonuses = [];
+  shieldActive = false;
+  laserActive = false;
+  laserTimer = 0;
 }
 
 function restartGame() {
